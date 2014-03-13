@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# AvrStudio Solution File, Format Version 11.00
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "u-osd", "u-osd.cproj", "{CFA3045A-60D0-433B-83CF-95995E1F3043}"
+EndProject
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "test", "..\test\test.cproj", "{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CFA3045A-60D0-433B-83CF-95995E1F3043}.Debug|AVR.ActiveCfg = Debug|AVR
+		{CFA3045A-60D0-433B-83CF-95995E1F3043}.Debug|AVR.Build.0 = Debug|AVR
+		{CFA3045A-60D0-433B-83CF-95995E1F3043}.Release|AVR.ActiveCfg = Release|AVR
+		{CFA3045A-60D0-433B-83CF-95995E1F3043}.Release|AVR.Build.0 = Release|AVR
+		{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}.Debug|AVR.ActiveCfg = Debug|AVR
+		{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}.Debug|AVR.Build.0 = Debug|AVR
+		{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}.Release|AVR.ActiveCfg = Release|AVR
+		{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
