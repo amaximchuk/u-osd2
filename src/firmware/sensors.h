@@ -75,13 +75,13 @@ static void update_sensors() {
 
 static void measure_analog() {
 	for (u8 i = 0; i < HW_ADC_NUMBERS; ++i) {
-		ADMUX		&= 0xF0;					// Clear mux
-		ADMUX		|= i;						// Setup adc mux
-		ADCSRA		|= (1<<ADEN) | (1<<ADATE);	// ADC enable & ADC auto trigger enable
-		ADCSRA		|= (1<<ADSC);				// Start measure
-		while ((ADCSRA & (1<<ADIF)) == 0);		// Wait to finish
-		ADCSRA		|= (1<<ADIF);				// Clear ADC interrupt flag with a 1
-		ADCSRA		&= ~(1<<ADEN) & ~(1<<ADATE);// ADC disabled & ADC auto trigger disabled
+		ADMUX		&= 0xF0;				// Clear mux
+		ADMUX		|= i;					// Setup adc mux
+		ADCSRA		|= (1<<ADEN);			// ADC enable & ADC auto trigger enable
+		ADCSRA		|= (1<<ADSC);			// Start measure
+		while ((ADCSRA & (1<<ADIF)) == 0);	// Wait to finish
+		ADCSRA		|= (1<<ADIF);			// Clear ADC interrupt flag with a 1
+		ADCSRA		&= ~(1<<ADEN);			// ADC disabled & ADC auto trigger disabled
 		g_adc_raw[i]= ADCW;
 	}    
 }

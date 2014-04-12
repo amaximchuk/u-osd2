@@ -39,6 +39,7 @@ static	analog_value	g_sensor_current;
 static time				g_time				= {};
 
 // Stats
+//static u32				g_stat_dist_accum	= 0;
 static u16				g_stat_dist_traveled= 0;
 static u8				g_stat_max_speed	= 0;
 static s16				g_stat_max_altitude	= 0;
@@ -49,7 +50,6 @@ static gps_data			g_gps_valid_data;
 static gps_data			g_gps_data;
 static gps_pos			g_gps_stat_pos;
 
-static u8				g_gps_stat_set		= 0;
 static u8				g_gps_stat_packet	= 0;
 //static u8				g_gps_stat_lost_packet= 0;
 

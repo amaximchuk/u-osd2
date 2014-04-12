@@ -21,7 +21,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 //-----------------------------------------------------------------------------
 // ADC
-#define HW_ADC_SCALE		3100,3100,500,500
+#ifdef _SXOSD
+#	define HW_ADC_SCALE		2000,2000,500,500
+#else
+#	define HW_ADC_SCALE		3100,3100,500,500
+#endif // _SXOSD
 #define HW_ADC_NUMBERS		4
 #define HW_ADC_BITS			10
 
@@ -29,6 +33,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 // VIDEO
 #define TIME_FPS_NTSC		60
 #define TIME_FPS_PAL		50
+#ifndef	_SXOSD
+#	define SERVICE_LINES_NTSC	18
+#	define SERVICE_LINES_PAL	22
+#else
+#	define SERVICE_LINES_NTSC	11
+#	define SERVICE_LINES_PAL	14
+#endif
 
 //-----------------------------------------------------------------------------
 // IO
@@ -61,7 +72,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 enum {
 	MODE_NTSC		= 0,
-	MODE_PAL
+	MODE_PAL,
+	MODE_COUNT
 };
 
 enum {
@@ -82,7 +94,9 @@ enum {
 
 enum {
 	DEVICE_EOSD		= 0,
-	DEVICE_GOSD
+	DEVICE_GOSD,
+	DEVICE_SXOSD,
+	DEVICE_COUNT
 };
 
 // ADC
@@ -111,7 +125,7 @@ typedef struct {
 			u8		hour;
 			u8		min	: 7;
 			u8		neg	: 1;
-			u16		sec100;
+			u16		dmin;
 		};
 		u32			data;			
 	};		

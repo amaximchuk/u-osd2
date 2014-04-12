@@ -30,34 +30,28 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define GPS_MAX_CHARS		16
 
 //-----------------------------------------------------------------------------
-// Screen and sensor refresh rate
+// Sensor refresh rate
 //-----------------------------------------------------------------------------
-#define SCREEN_UPDATE_RATE	10
-#define SENSOR_UPDATE_RATE	1
+#define SENSOR_UPDATE_RATE	2
 
-// NTSC
+// Line delay
 #define LINE_DELAY_NTSC		_delay_us(1.3)
-// PAL
 #define LINE_DELAY_PAL		_delay_us(1.7)
-#define FRAME_SYNC_LINE		200
 
 //-----------------------------------------------------------------------------
 // HARDWARE
 //-----------------------------------------------------------------------------
-#define BLACK_OUT			PB1
+#ifdef _SXOSD
+#	define SHADOW_ON		BIT_SET(DDRD, PD7);
+#	define SHADOW_OFF		BIT_CLEAR(DDRD, PD7);
+#	define LTRIG_IN			PD3	//IRQ: INT0
+#else
+#	define SHADOW_ON		BIT_SET(DDRB, PB1);
+#	define SHADOW_OFF		BIT_CLEAR(DDRB, PB1);
+#	define LTRIG_IN			PD2	//IRQ: INT0
+#endif
+
 #define WHITE_OUT			PB3
-#define LTRIG_IN			PD2
-
-#define BLACK_MASK			(1<<BLACK_OUT)
-#define WHITE_MASK			(1<<WHITE_OUT)
-
-#define LTRIG_MASK			(1<<LTRIG_IN) //INT0
-#define SS_MASK				(1<<PB2)
-
-#define OUT1				(1<<PB1)
-#define OUT2				(1<<PB3)
-
-#define LTRIG				(1<<PD2) //INT0
-#define SS					(1<<PB2)
+#define SS_OUT				PB2
 
 #endif /* CONFIG_H_ */

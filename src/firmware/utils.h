@@ -302,7 +302,7 @@ static u32 div10_u32(u32 A) {
 	return Q;
 }	
 
-__attribute__((noinline,unused))
+__attribute__((unused))
 static u8 div_bf(u16 val, u8 divider) { // brute force
 	u8 res		= 0;
 	while (val >= divider) {
@@ -395,20 +395,18 @@ static void deg_to_dm(s32 deg, gps_coord *coord) {
 	m		= deg / 10000;
 	// sec*100
 	dm		= deg % 10000;
-	dm		*= 6; 
-	dm		/= 10;//div10_u16(dm);
 	
 	// copy
 	coord->hour		= h;
 	coord->min		= m;
-	coord->sec100	= dm;
+	coord->dmin		= dm;
 	coord->neg		= n;
 }
 
 static s32 nmea_to_sec100(const gps_coord *coord) {
 	u8	h		= coord->hour;
 	u8	m		= coord->min; 
-	u16	sec100	= coord->sec100;
+	u16	sec100	= coord->dmin * 3 / 5; // *60/100
 	s8	neg		= coord->neg;
 
 	s32 result	= h * 60;
@@ -447,8 +445,9 @@ static u16 knot_to_kmph(u32 v) {
 
 __attribute__((noinline,unused))
 static void parse_gps_coord(gps_coord *coord, const char* const text, u16 corr) {
-	u8		h, m, n	= 0; 
-	u16		dm	= 0;
+	u8		h, n= 0; 
+	s8		m;
+	s16		dm	= 0;
 	pcstr str	= text;
 
 	if (*str == '-') {
@@ -479,20 +478,24 @@ static void parse_gps_coord(gps_coord *coord, const char* const text, u16 corr) 
 	if (dm > 9999) {
 		dm	-= 10000;
 		m	++;
-	}		
+	} else if (dm < 0) {
+		dm	+= 10000;
+		m	--;
+	}
 	if (m > 59) {
 		m	-= 60;
-		h	++;
-	}		
-	
-	// convert to sec*100
-	dm		*= 6; 
-	dm		/= 10;//div10_u16(dm);
+		if (h < 59)	h++;
+		else		n = !n;
+	} else if (m < 0) {
+		m	+= 60;
+		if (h)	h--;
+		else	n = !n;
+	}
 	
 	// copy
 	coord->hour		= h;
 	coord->min		= m;
-	coord->sec100	= dm;
+	coord->dmin		= dm;
 	coord->neg		= n;
 }
 

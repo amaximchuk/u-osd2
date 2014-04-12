@@ -56,15 +56,27 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //adcHigh = 1054 / 1024 = 1 => 1V for display
 //temp = 1054 - 1024 = 30
 //adcLow = 30 * 100 / 1024 = 2 => .02V for display
+// ADC prescaler selections.
+// ADPS2	ADPS1	ADPS0	Division factor
+// 0		0		0		2
+// 0		0		1		2
+// 0		1		0		4
+// 0		1		1		8
+// 1		0		0		16
+// 1		0		1		32
+// 1		1		0		64
+// 1		1		1		128
 static void setup_adc() {
 	// ADC setup
-	DIDR0	= 0x00;
 	ADMUX	|= (1<<REFS0);				// Ref is AVCC
-	ADCSRA	|= (1<<ADPS2) | (1<<ADPS1); // | (1<<ADPS0); 
-	ADCSRB	= 0;						// Free running
+	ADCSRA	|= (1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0); 
+//	DIDR0	= 0x00;
+//	ADCSRB	= 0;						// Free running
+//	ACSR	= (1<<ACD);					// Comparator disabled
 }
 
 #define GPS_UBRR_INT (F_CPU/16/100)
+
 static void setup_gps() {
 	u16 gps_ubrr	= 0;
 	switch (cfg.gps.baud) {
@@ -74,29 +86,52 @@ static void setup_gps() {
 	}
 	
 	// USART setup
-	UBRR0H	= (u8)(gps_ubrr>>8);// set baud
-	UBRR0L	= (u8)gps_ubrr;
-	UCSR0C	= (3<<UCSZ00);		// 8N1 (8 bit, 1 stop bit)
-	UCSR0B	= (1<<RXEN0);		// Enable RX
-
-//	memset	(&g_gps_data,		0,sizeof(g_gps_data));
-//	memset	(&g_gps_valid_data,	0,sizeof(g_gps_valid_data));
+#if (defined __AVR_ATmega8__)
+	UBRRH	= (u8)(gps_ubrr>>8);// set baud
+	UBRRL	= (u8)gps_ubrr;
+	UCSRC	= (1<<URSEL)|(1<<UCSZ1)|(1<<UCSZ0); // 8N1 (8 bit, 1 stop bit)
+	UCSRB	= (1<<RXEN);		// Enable RX
+#else
+ 	UBRR0H	= (u8)(gps_ubrr>>8);// set baud
+ 	UBRR0L	= (u8)gps_ubrr;
+	UCSR0C	= (1<<UCSZ01)|(1<<UCSZ00);		// 8N1 (8 bit, 1 stop bit)
+ 	UCSR0B	= (1<<RXEN0);		// Enable RX
+#endif	
 }
 
 static void setup_layout() {
 	g_length_unit	= cfg.units == UNITS_IMPERIAL ? 'F' : 'm';
-	g_radar_last_pos		= cfg.layout.radar.c;
-	g_home_arrow_last_pos	= cfg.layout.radar.c;
+	if (MODE_NTSC == cfg.video_mode)	cfg.layout.rows_offset	+= SERVICE_LINES_NTSC;
+	else								cfg.layout.rows_offset	+= SERVICE_LINES_PAL;
+//	cfg.layout.rows_offset	+= SERVICE_LINES_NTSC;
+//	g_radar_last_pos		= cfg.layout.radar.c;
+//	g_home_arrow_last_pos	= cfg.layout.home_arrow.c;
+	g_radar_last_pos.x		= 0;
+	g_radar_last_pos.y		= 0;
+	g_home_arrow_last_pos.x = 0;
+	g_home_arrow_last_pos.y = 0;
 
-	print_text		(&cfg.layout.sign, cfg.callsign, TRUE);
+//	print_text		(&cfg.layout.sign, cfg.callsign, TRUE);
 }	
 
 static void setup_line() {
+	SHADOW_OFF;
+	DDRB	= (1<<WHITE_OUT) | (1<<SS_OUT);
+
+	// ISC01	ISC00	Description
+	// ISC11	ISC10	Description
+	// 0		0		The low level of INT0 generates an interrupt request
+	// 0		1		Any logical change on INT0 generates an interrupt request
+	// 1		0		The falling edge of INT0 generates an interrupt request
+	// 1		1		The rising edge of INT0 generates an interrupt request
 	// Line trigger
-	EICRA	= (1<<ISC00) | (1<<ISC01);	//set INT0 as rising edge trigger
-	EIMSK	= (1<<INT0);				//enable INT0 in global interrupt mask
-	ACSR	= (1<<ACD);					//Comparator disabled
-	ADCSRB	= 0x00;
+#if (defined __AVR_ATmega8__)
+	MCUCR	= (0<<ISC01) | (1<<ISC00) | (0<ISC11);// | (0<ISC10);
+	GICR	= (1<<INT0) | (1<<INT1);	// enable INT0:1 interrupts
+#else
+	EICRA	= (1<<ISC00) | (1<<ISC01);	// set INT0 as rising edge trigger
+	EIMSK	= (1<<INT0);				// enable INT0 in global interrupt mask
+#endif
 
 	// SPI setup
 	// SPDR:
@@ -110,11 +145,6 @@ static void setup_line() {
 	//									When this bit is set to one, the SPI speed will be doubled when the SPI is in Master mode.
 	// SPIF (SPI Interrupt Flag) bit:	This is a read only bit. It is set by hardware when a serial transfer is complete. 
 	//									SPIF is cleared by hardware when the SPI interrupt handling vector is executed, or when the SPIF bit and the SPDR register are read.
-//#ifdef TEXT_SMALL_ENABLED
-//	SPSR	|= (1<<SPI2X);	// Set dual speed
-//#else
-	SPSR	&= ~(1<<SPI2X);	// Clear dual speed
-//#endif //TEXT_SMALL_ENABLED
 
 	// SPCR:
 	// Bit 7 	Bit 6 	Bit 5 	Bit 4 	Bit 3 	Bit 2 	Bit 1 	Bit 0
@@ -141,16 +171,17 @@ static void setup_line() {
 
 static void setup(void)
 {
-	BIT_CLEAR(PORTB, BLACK_OUT);
-	DDRB	= WHITE_MASK | SS_MASK;
-
 	//CS12 	CS11 	CS10
 	//0 	0 		1		CK
 	//0 	1		0		CK / 8
 	//0 	1		1		CK / 64
 	//1 	0 		0 		CK / 256
 	//1 	0 		1 		CK / 1024	
-	TIMSK1	|= (1 << TOIE1);				// Enable overflow interrupt
+#if (defined __AVR_ATmega8__)
+	TIMSK	|= (1 << TOIE1);				// Enable overflow interrupt
+#else
+ 	TIMSK1	|= (1 << TOIE1);				// Enable overflow interrupt
+#endif 
 	TCCR1B	|= ((1 << CS10) | (1 << CS11));	// Start timer at Fcpu/64 according to TIMER_FPS
 //	TCCR1B	|= (1 << CS12);	// Start timer at Fcpu/64 according to TIMER_FPS
 
@@ -169,8 +200,10 @@ static void setup(void)
 	eeprom_read_block(&cfg,	(const void*)0,sizeof(config));
 
 	// Port setup
+#ifndef	_SXOSD
 	PORTD		= cfg.pin.key_mask;			// key pullup & led off
 	DDRD		= cfg.pin.led_mask;			// led output
+#endif // _SXOSD
 
 	setup_line	();
 	setup_layout();

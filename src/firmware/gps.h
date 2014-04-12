@@ -26,7 +26,8 @@ static void set_home_pos() {
 	g_stat_max_altitude	= 0;
 	g_stat_max_distance	= 0;
 
-	g_home_pos	= g_gps_valid_data.pos;
+	g_home_pos			= g_gps_valid_data.pos;
+	g_gps_stat_pos		= g_gps_valid_data.pos;
 
 	g_home_set	= 1;
 }

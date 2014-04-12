@@ -146,7 +146,7 @@ static void parse_gps_part() {
 				{
 					u8 val = parse_hex(g_gps_text, GPS_MAX_CHARS);
 					g_gps_data.chksum_valid = (val == g_gps_checksum);
-					//if (val != g_gps_checksum) g_gps_stat_lost_packet++;
+					//if (!g_gps_data.chksum_valid) g_gps_stat_lost_packet++;
 				}				
 				break;
 			}				

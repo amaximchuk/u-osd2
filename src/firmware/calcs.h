@@ -136,17 +136,13 @@ static void calc_home(gps_pos *curr, gps_pos *home, u32 *const distance_result, 
 }
 
 static void calc_distance_traveled() {
-	if (!g_gps_valid_data.fix)	
+	if (!g_gps_valid_data.fix || !g_home_set)	
 		return;
 		
-	if (!g_gps_stat_set) {
-		g_gps_stat_pos	= g_gps_valid_data.pos;
-		g_gps_stat_set	= TRUE;
-	}		
-
 	u32					distance;
 	calc_home			(&g_gps_valid_data.pos, &g_gps_stat_pos, &distance, NULL);
 	if (distance) {
+		//g_stat_dist_accum	+= distance;
 		g_stat_dist_traveled+= distance;
 		g_gps_stat_pos	= g_gps_valid_data.pos;
 	}		

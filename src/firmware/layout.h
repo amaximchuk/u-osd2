@@ -137,11 +137,8 @@ void print_gps_coord(lt_text *str, gps_coord *val, u8 lat) {
 
 	u8	h			= val->hour;
 	u8	m			= val->min; 
-	u16	dm			= val->sec100;
+	u16	dm			= val->dmin;
 	s8	neg			= val->neg;
-	
-	dm				*= 10;
-	dm				/= 6;//div6_u16(dm);
 	
 	if (lat) 		*dst++	= neg ? 'S' : 'N';
 	else {
@@ -283,6 +280,7 @@ void print_home(lt_text *home, u8 home_set, u16 angle_to_home, u8 b1Hz, u8 speed
 static void update_layout() {
 	u8 blink		= g_time.blink;
 
+#ifndef _SXOSD
 	u8 led_mask		= cfg.pin.led_mask;
 	if (g_gps_valid_data.fix) {
 		if (g_home_set)	PORTD |= led_mask;
@@ -293,6 +291,8 @@ static void update_layout() {
 	} else {
 		PORTD		^= led_mask;
 	}
+#endif // _SXOSD
+
 	if (g_home_set) {
 		u32			distance;
 		calc_home	(&g_gps_valid_data.pos, &g_home_pos, &distance, &g_home_bearing);
@@ -325,6 +325,7 @@ static void update_layout() {
 	}		
 	
 	// print values
+	print_text		(&cfg.layout.sign,		cfg.callsign, TRUE);
 	print_float		(&cfg.layout.timer,		g_time.min, 3,2, g_time.sec, 2,2, 0, 0, ':');
 
 	if (sat_fix) {
@@ -339,13 +340,13 @@ static void update_layout() {
 
 	if (!aBatt1 || blink)	print_float		(&cfg.layout.volt1, g_sensor_voltage1.high, 2, 1, g_sensor_voltage1.low, 2, 2, CHAR_BAT1, 'V', '.');
 	else					str_fill		(&cfg.layout.volt1, ' ');
-	if (!aBatt2 || blink)	print_float		(&cfg.layout.volt2, g_sensor_voltage2.high, 2, 1, g_sensor_voltage2.low, 2, 2, CHAR_BAT1, 'V', '.');
+	if (!aBatt2 || blink)	print_float		(&cfg.layout.volt2, g_sensor_voltage2.high, 2, 1, g_sensor_voltage2.low, 2, 2, CHAR_BAT2, 'V', '.');
 	else					str_fill		(&cfg.layout.volt2, ' ');
 	
 	if (!aRssi || blink)	print_decimal	(&cfg.layout.rssi,g_sensor_rssi, 2, 0x40, '%');
 	else					str_fill		(&cfg.layout.rssi, ' ');
 
-	print_float		(&cfg.layout.current,	g_sensor_current.high, 2, 1, g_sensor_current.low, 2, 2, CHAR_CURRENT, 'A', '.');	
+	print_float		(&cfg.layout.current,	g_sensor_current.high, 3, 1, g_sensor_current.low, 2, 2, CHAR_CURRENT, 'A', '.');	
 	pstr str	=	print_decimal			(&cfg.layout.power_usage, g_sensor_power_usage >> 10,	4,	CHAR_CURRENT, 'm');	
 	if (str) {
 		u8 sh	= cfg.layout.power_usage.props.shadowed ? CHAR_SH : 0;
@@ -375,10 +376,10 @@ static void update_layout() {
 	s16 angle_to_home			= (g_home_bearing -	g_gps_valid_data.angle);
 	if (angle_to_home < 0)		angle_to_home += 360;
 	
+	print_home_arrow(&cfg.layout.home_arrow,	angle_to_home, speed);
 	print_radar		(&cfg.layout.radar,			g_home_bearing,	g_gps_valid_data.angle, g_home_distance, speed);
 	print_course	(&cfg.layout.bear_to_home,	angle_to_home, speed);
 	print_home		(&cfg.layout.home,			g_home_set,	angle_to_home, blink, speed);
-	print_home_arrow(&cfg.layout.home_arrow,	angle_to_home, speed);
 }
 
 static void draw_line(u8 row, u8 line)
@@ -409,8 +410,8 @@ static void draw_line(u8 row, u8 line)
 			out			= 0;
 			DELAY_9_NOP	();
 		}				
-		if (sh)			{	BIT_SET(DDRB, BLACK_OUT);					}
-		else			{	BIT_CLEAR(DDRB, BLACK_OUT);	DELAY_1_NOP();	}
+		if (sh)			{	SHADOW_ON;					}
+		else			{	SHADOW_OFF;	DELAY_1_NOP();	}
 		SPDR			= out;
 
 		DELAY_9_NOP		();
@@ -419,12 +420,15 @@ static void draw_line(u8 row, u8 line)
 	DELAY_10_NOP		();
 	DELAY_7_NOP			();
 	SPDR				= 0x00;
-	BIT_CLEAR			(DDRB, BLACK_OUT);
+	SHADOW_OFF;
 }
 
 static void update_line() {
 	_delay_us			(4.5);		// wait 4.5 us to see if H or V sync
-	if(!BIT_TEST(PIND, LTRIG_IN)) { // H sync
+#ifndef _SXOSD
+	if(!BIT_TEST(PIND, LTRIG_IN)) 
+#endif // _SXOSD
+	{ // H sync
 		// skip first N lines
 		u8 line			= g_skip_line;
 		if (++line <= cfg.layout.rows_offset) {
@@ -443,19 +447,23 @@ static void update_line() {
 			}
 			line++;
 			if (line == 255)	line--;
-			if (line == l_end)	rnum++;
+			if (line == l_end){
+				rnum++;
+				if (rnum == TEXT_ROWS)
+					g_frame_sync = cfg.fps;
+			}				
 			
 			g_text_row		= rnum;
 			g_active_line	= line;
-		
-			if (line == FRAME_SYNC_LINE)
-				g_frame_sync = cfg.fps;
 		}
-	} else { // V sync
+	} 
+#ifndef _SXOSD
+	else { // V sync
 		g_active_line	= 0;
 		g_skip_line		= 0;
 		g_text_row		= 0;
 	}
+#endif // _SXOSD
 }
 
 #endif /* LAYOUT_H_ */

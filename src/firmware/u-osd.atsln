@@ -9,16 +9,20 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|AVR = Debug|AVR
 		Release|AVR = Release|AVR
+		SXOSD|AVR = SXOSD|AVR
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{CFA3045A-60D0-433B-83CF-95995E1F3043}.Debug|AVR.ActiveCfg = Debug|AVR
 		{CFA3045A-60D0-433B-83CF-95995E1F3043}.Debug|AVR.Build.0 = Debug|AVR
 		{CFA3045A-60D0-433B-83CF-95995E1F3043}.Release|AVR.ActiveCfg = Release|AVR
 		{CFA3045A-60D0-433B-83CF-95995E1F3043}.Release|AVR.Build.0 = Release|AVR
+		{CFA3045A-60D0-433B-83CF-95995E1F3043}.SXOSD|AVR.ActiveCfg = SXOSD|AVR
+		{CFA3045A-60D0-433B-83CF-95995E1F3043}.SXOSD|AVR.Build.0 = SXOSD|AVR
 		{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}.Debug|AVR.ActiveCfg = Debug|AVR
 		{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}.Debug|AVR.Build.0 = Debug|AVR
 		{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}.Release|AVR.ActiveCfg = Release|AVR
 		{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}.Release|AVR.Build.0 = Release|AVR
+		{61C17E02-0151-4CEA-BF84-EAB9AFB9C6BB}.SXOSD|AVR.ActiveCfg = Release|AVR
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

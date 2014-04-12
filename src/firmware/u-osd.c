@@ -58,12 +58,14 @@ static void update_time(u8 fps) {
 	g_time.blink	= (g_time.tick > (fps / 2));
 }
 
+__attribute__((unused))
 static void reset_time() {
 	g_time.tick		= 0;
 	g_time.sec		= 0;
 	g_time.min		= 0;
 }	
 
+__attribute__((unused))
 static void on_frame(u8 fps) {
 	if (g_key_pressed) {
 		++g_key_press_time;
@@ -74,9 +76,11 @@ static void on_frame(u8 fps) {
 	if (g_time.tick % (fps / SENSOR_UPDATE_RATE) == 0) {
 		measure_analog	();
 		update_sensors	();
-		calc_distance_traveled();
 	}
-	if (g_time.tick % (fps / SCREEN_UPDATE_RATE) == 0) {
+	if ((0 == g_time.sec % 2) && g_time.tick == 0) {
+		calc_distance_traveled();
+	}		
+	if (g_time.tick % 2 == 0) {
 		update_layout	();
 	}
 
@@ -86,19 +90,23 @@ static void on_frame(u8 fps) {
 __attribute__ ((noreturn))
 void main(void) {
 	setup				();
-
 	while (1) {
-		if(UCSR0A & (1<<RXC0)) {
-			decode_gps	(UDR0);
-		}
-	
+#if (defined __AVR_ATmega8__)
+		if(UCSRA & (1<<RXC))
+			decode_gps	(UDR);
+#else
+		if(UCSR0A & (1<<RXC0))
+ 			decode_gps	(UDR0);
+#endif 
+
+#ifndef	_SXOSD
 		u8 key			= cfg.pin.key_mask;
 		u8 led			= cfg.pin.led_mask;
 		if((PIND & key) != key) {
 			g_key_pressed = 1;
 			if (g_key_press_time > cfg.fps) {	// long press
 				PORTD	|= led;		
-				if (g_gps_data.chksum_valid && g_gps_data.fix) {
+				if (g_gps_valid_data.chksum_valid && g_gps_valid_data.fix) {
 					g_key_press_time = 0;
 					set_home_pos();
 					reset_time	();
@@ -111,6 +119,7 @@ void main(void) {
 			g_key_pressed	= 0;
 			g_key_press_time= 0;
 		}
+#endif // _SXOSD
 
 		if (g_frame_sync) {
 			on_frame	(g_frame_sync);
@@ -118,14 +127,31 @@ void main(void) {
 	}
 }
 
-ISR(INT0_vect) {
-	update_line	();
-	TCNT1		= 0;	// Reset sync lost timeout.
+#ifdef _SXOSD
+// VSYNC interrupt
+ISR(INT0_vect)
+{
+	g_active_line	= 0;
+	g_skip_line		= 0;
+	g_text_row		= 0;
 }
+// HSYNC interrupt
+ISR(INT1_vect) {
+	update_line		();
+
+	TCNT1			= 0;	// Reset sync lost timeout.
+}
+#else
+ISR(INT0_vect) {
+	update_line		();
+
+	TCNT1			= 0;	// Reset sync lost timeout.
+}
+#endif // _SXOSD
 
 ISR(TIMER1_OVF_vect)
 {
 	// activate on frame if sync lost (10 FPS)
-	g_frame_sync= SCREEN_UPDATE_RATE;
-	TCNT1		= 0xFFFF - F_CPU / 64 / SCREEN_UPDATE_RATE;
+	g_frame_sync	= 10;
+	TCNT1			= 0xFFFF - F_CPU / 64 / 10;
 }	
