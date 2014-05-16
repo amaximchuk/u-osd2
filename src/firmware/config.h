@@ -28,6 +28,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 // GPS
 //-----------------------------------------------------------------------------
 #define GPS_MAX_CHARS		16
+#define GPS_BUFFER_SIZE		28
+//#define GPS_DEBUG
 
 //-----------------------------------------------------------------------------
 // Sensor refresh rate

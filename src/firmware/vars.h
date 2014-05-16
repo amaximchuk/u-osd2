@@ -25,15 +25,14 @@ static u8				g_key_press_time	= 0;
 
 // ADC
 static u16				g_adc_raw[HW_ADC_NUMBERS];
-static u16				g_adc_scale[HW_ADC_NUMBERS] = {HW_ADC_SCALE};
-
-static u8				g_sensor_rssi		= 0;
+static u16				g_adc_scale[HW_ADC_NUMBERS] PROGMEM = {HW_ADC_SCALE};
 
 static analog_value		g_sensor_voltage1;
 static analog_value		g_sensor_voltage2;
+static u8				g_sensor_rssi		= 0;
+static analog_value		g_sensor_current;
 
-static	u32				g_sensor_power_usage= 0;
-static	analog_value	g_sensor_current;
+static u32				g_sensor_power_usage= 0;
 
 // System
 static time				g_time				= {};
@@ -46,14 +45,16 @@ static s16				g_stat_max_altitude	= 0;
 static u16				g_stat_max_distance	= 0;
 
 // GPS
+static u8				g_gps_buffer[GPS_BUFFER_SIZE] = {0};
+static u8				g_gps_buffer_r		= 0;
+static u8				g_gps_buffer_w		= 0;
 static gps_data			g_gps_valid_data;
 static gps_data			g_gps_data;
 static gps_pos			g_gps_stat_pos;
 
 static u8				g_gps_stat_packet	= 0;
-//static u8				g_gps_stat_lost_packet= 0;
 
-static u32				g_home_distance		= 0;	// Distance to home
+static u16				g_home_distance		= 0;	// Distance to home
 static u16				g_home_bearing		= 0;	// Direction to home
 
 static gps_pos			g_home_pos; 
@@ -71,8 +72,16 @@ static u8				g_text_row;
 static char				g_text_buffer[TEXT_ROWS][TEXT_ROW_MAX_CHARS];
 static lt_pos			g_radar_last_pos;
 
-static s8				g_home_arrow_segments[8][2] = {{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
 static lt_pos			g_home_arrow_last_pos;
+
+static s8				g_home_arrow_segments[8][2] PROGMEM = {{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
+static u16				g_gps_baud[]				PROGMEM = {48,96,192,384,576};
+static char				g_char_home_arrow[]			PROGMEM = {";/-?;/-?"};
+static char				g_char_gps_packets[]		PROGMEM = {"-?;/"};
+
+#ifdef GPS_DEBUG
+	static u8			g_gps_stat_lost_packet= 0;
+#endif // GPS_DEBUG
 
 //*
 static config			cfg;

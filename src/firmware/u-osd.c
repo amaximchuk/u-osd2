@@ -91,14 +91,7 @@ __attribute__ ((noreturn))
 void main(void) {
 	setup				();
 	while (1) {
-#if (defined __AVR_ATmega8__)
-		if(UCSRA & (1<<RXC))
-			decode_gps	(UDR);
-#else
-		if(UCSR0A & (1<<RXC0))
- 			decode_gps	(UDR0);
-#endif 
-
+		update_gps		();
 #ifndef	_SXOSD
 		u8 key			= cfg.pin.key_mask;
 		u8 led			= cfg.pin.led_mask;
@@ -138,20 +131,10 @@ ISR(INT0_vect)
 // HSYNC interrupt
 ISR(INT1_vect) {
 	update_line		();
-
-	TCNT1			= 0;	// Reset sync lost timeout.
 }
 #else
 ISR(INT0_vect) {
 	update_line		();
-
-	TCNT1			= 0;	// Reset sync lost timeout.
+	poll_gps		();
 }
 #endif // _SXOSD
-
-ISR(TIMER1_OVF_vect)
-{
-	// activate on frame if sync lost (10 FPS)
-	g_frame_sync	= 10;
-	TCNT1			= 0xFFFF - F_CPU / 64 / 10;
-}	

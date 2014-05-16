@@ -78,12 +78,7 @@ static void setup_adc() {
 #define GPS_UBRR_INT (F_CPU/16/100)
 
 static void setup_gps() {
-	u16 gps_ubrr	= 0;
-	switch (cfg.gps.baud) {
-	case GPS_4800:	gps_ubrr	= GPS_UBRR_INT / 48 - 1; break;
-	case GPS_9600:
-	default:		gps_ubrr	= GPS_UBRR_INT / 96 - 1; break;
-	}
+	u16 gps_ubrr	= GPS_UBRR_INT / pgm_read_word(&g_gps_baud[cfg.gps.baud]) - 1;
 	
 	// USART setup
 #if (defined __AVR_ATmega8__)
@@ -177,12 +172,12 @@ static void setup(void)
 	//0 	1		1		CK / 64
 	//1 	0 		0 		CK / 256
 	//1 	0 		1 		CK / 1024	
-#if (defined __AVR_ATmega8__)
-	TIMSK	|= (1 << TOIE1);				// Enable overflow interrupt
-#else
- 	TIMSK1	|= (1 << TOIE1);				// Enable overflow interrupt
-#endif 
-	TCCR1B	|= ((1 << CS10) | (1 << CS11));	// Start timer at Fcpu/64 according to TIMER_FPS
+//#if (defined __AVR_ATmega8__)
+	//TIMSK	|= (1 << TOIE1);				// Enable overflow interrupt
+//#else
+ 	//TIMSK1	|= (1 << TOIE1);				// Enable overflow interrupt
+//#endif 
+	//TCCR1B	|= ((1 << CS10) | (1 << CS11));	// Start timer at Fcpu/64 according to TIMER_FPS
 //	TCCR1B	|= (1 << CS12);	// Start timer at Fcpu/64 according to TIMER_FPS
 
 	//CS22 	CS21 	CS20

@@ -190,8 +190,8 @@ u8 radar_calc_pos(u8 r, u16 angle, s8 *rx, s8 *ry) {
 
 __attribute__((noinline))
 u8 course_index(u16 ath) {
-//	u8 idx			= (ath + 1 + 22) / 45;				// 202 cycles
-	u8 idx			= ((ath + 1 + 22) * 91) >> 12;		// 18 cycles (x / 45)
+	u8 idx			= (ath + 1 + 22) / 45;				// 202 cycles
+//	u8 idx			= ((ath + 1 + 22) * 91) >> 12;		// 18 cycles (x / 45)
 	if (idx >= 8)	idx	= 0;
 	return			idx;
 }	
@@ -235,22 +235,25 @@ void print_radar(lt_radar *loc, u16 bearing, u16 angle, u16 dist, u8 speed) {
 	g_radar_last_pos.y	= ry;
 }
 
-void print_home_arrow(lt_home_arrow *loc, u16 angle_to_home, u8 speed)
+void print_home_arrow(lt_home_arrow *loc, u16 ath, u8 speed)
 {
 	if (!loc->props.visible) return;
-	u8 idx			= course_index(angle_to_home);
+	u8 idx			= course_index(ath);
 	char sh			= loc->props.shadowed ? CHAR_SH : 0;
 
 	u8 cx			= loc->c.x;
 	u8 cy			= loc->c.y;
 	u8 lx			= g_home_arrow_last_pos.x;
 	u8 ly			= g_home_arrow_last_pos.y;
-	u8 rx			= cx + g_home_arrow_segments[idx][0];
-	u8 ry			= cy + g_home_arrow_segments[idx][1];
+
+	lt_pos			segm;
+	segm.d			= pgm_read_word(&g_home_arrow_segments[idx]);
+	u8 rx			= cx + segm.x;
+	u8 ry			= cy + segm.y;
 
 	pstr ptr		= str_ptr(ly,lx);	*ptr = 0;
 	ptr				= str_ptr(cy,cx);	*ptr = sh | CHAR_RADAR_CENTER;
-	ptr				= str_ptr(ry,rx);	*ptr = sh | (CHAR_HOME_ARROW[idx]);
+	ptr				= str_ptr(ry,rx);	*ptr = sh | (pgm_read_byte(&g_char_home_arrow[idx]));
 
 	g_home_arrow_last_pos.x = rx;
 	g_home_arrow_last_pos.y = ry;
@@ -264,17 +267,24 @@ void print_course(lt_text *course, s16 ath, u8 speed)
 	else			print_decimal	(course, 360-ath,	3, rs,' ');
 }
 
-void print_home(lt_text *home, u8 home_set, u16 angle_to_home, u8 b1Hz, u8 speed) {
+void print_home(lt_text *home, u8 home_set, u16 ath, u8 b1Hz, u8 speed) {
 	if (!home->props.visible) return;
 	pstr dst		= str_ptr(home->p.y,home->p.x);
 	char sh			= home->props.shadowed ? CHAR_SH : 0;
 	if (home_set) {
 		*dst++		= sh | ')';
-		char rs		= course_index(angle_to_home) + 0x5B;
+		char rs		= course_index(ath) + 0x5B;
 		*dst		= sh | rs;
 	} else {
 		*dst		= sh | (b1Hz ? '(' : ' ');
 	}
+}
+
+__attribute__((noinline,unused))
+u8 check_alarm(u8 high, u8 low, u8 alarm)
+{
+	u16 level		= high * 100 + low;
+	return			level && (level < alarm); 
 }
 
 static void update_layout() {
@@ -319,8 +329,8 @@ static void update_layout() {
 		aSpeed		= speed > cfg.alarm.speed_high;
 		aAltitude	= alt_rel > cfg.alarm.alt_high || alt_rel < cfg.alarm.alt_low;
 		aDistToHome	= (g_home_distance > cfg.alarm.dist_high);
-		aBatt1		= g_sensor_voltage1.val100	&& (g_sensor_voltage1.val100 < cfg.alarm.vol1_low);
-		aBatt2		= g_sensor_voltage2.val100	&& (g_sensor_voltage2.val100 < cfg.alarm.vol2_low);
+		aBatt1		= check_alarm(g_sensor_voltage1.high, g_sensor_voltage1.low, cfg.alarm.vol1_low); // g_sensor_voltage1.val100	&& (g_sensor_voltage1.val100 < cfg.alarm.vol1_low);
+		aBatt2		= check_alarm(g_sensor_voltage2.high, g_sensor_voltage2.low, cfg.alarm.vol2_low); // g_sensor_voltage2.val100	&& (g_sensor_voltage2.val100 < cfg.alarm.vol2_low);
 		aRssi		= g_sensor_rssi				&& (g_sensor_rssi < cfg.alarm.rssi_low);
 	}		
 	
@@ -335,7 +345,7 @@ static void update_layout() {
 		str_fill	(&cfg.layout.lon, '-');
 		str_fill	(&cfg.layout.lat, '-');
 	}		
-	if (sat_fix || blink)	print_decimal	(&cfg.layout.sat, g_gps_valid_data.sats,2, '&', CHAR_GPS_PACKETS[g_gps_stat_packet]);
+	if (sat_fix || blink)	print_decimal	(&cfg.layout.sat, g_gps_valid_data.sats,2, '&', pgm_read_byte(&g_char_gps_packets[g_gps_stat_packet]));
 	else					str_fill		(&cfg.layout.sat, ' ');
 
 	if (!aBatt1 || blink)	print_float		(&cfg.layout.volt1, g_sensor_voltage1.high, 2, 1, g_sensor_voltage1.low, 2, 2, CHAR_BAT1, 'V', '.');
@@ -343,9 +353,13 @@ static void update_layout() {
 	if (!aBatt2 || blink)	print_float		(&cfg.layout.volt2, g_sensor_voltage2.high, 2, 1, g_sensor_voltage2.low, 2, 2, CHAR_BAT2, 'V', '.');
 	else					str_fill		(&cfg.layout.volt2, ' ');
 	
+#ifdef GPS_DEBUG
+	print_decimal	(&cfg.layout.rssi,g_gps_stat_lost_packet, 3, '&', 0);
+#else
 	if (!aRssi || blink)	print_decimal	(&cfg.layout.rssi,g_sensor_rssi, 2, 0x40, '%');
 	else					str_fill		(&cfg.layout.rssi, ' ');
-
+#endif // GPS_DEBUG
+	
 	print_float		(&cfg.layout.current,	g_sensor_current.high, 3, 1, g_sensor_current.low, 2, 2, CHAR_CURRENT, 'A', '.');	
 	pstr str	=	print_decimal			(&cfg.layout.power_usage, g_sensor_power_usage >> 10,	4,	CHAR_CURRENT, 'm');	
 	if (str) {
@@ -359,7 +373,7 @@ static void update_layout() {
 	print_decimal	(&cfg.layout.stat_trip,		g_stat_dist_traveled,	4, CHAR_DIST_TRAVELED,g_length_unit);
 	print_decimal	(&cfg.layout.stat_max_dist,	g_stat_max_distance,	4, CHAR_MAX_DIST,g_length_unit);
 	
-	if (!aDistToHome || blink)	print_decimal	(&cfg.layout.dist_to_home,	g_home_distance,	4, 0,g_length_unit);
+	if (!aDistToHome || blink)	print_decimal	(&cfg.layout.dist_to_home, g_home_distance,	4, 0,g_length_unit);
 	else						str_fill		(&cfg.layout.dist_to_home, ' ');
 	
 	if (alt_rel < 0)			alt_rel = 0;
@@ -423,6 +437,7 @@ static void draw_line(u8 row, u8 line)
 	SHADOW_OFF;
 }
 
+__attribute__((unused))
 static void update_line() {
 	_delay_us			(4.5);		// wait 4.5 us to see if H or V sync
 #ifndef _SXOSD

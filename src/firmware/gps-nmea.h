@@ -146,7 +146,9 @@ static void parse_gps_part() {
 				{
 					u8 val = parse_hex(g_gps_text, GPS_MAX_CHARS);
 					g_gps_data.chksum_valid = (val == g_gps_checksum);
-					//if (!g_gps_data.chksum_valid) g_gps_stat_lost_packet++;
+#ifdef GPS_DEBUG
+					if (!g_gps_data.chksum_valid) g_gps_stat_lost_packet++;
+#endif // GPS_DEBUG
 				}				
 				break;
 			}				
@@ -195,6 +197,23 @@ static void decode_gps(char data) {
 		}
 		break;
 	}
+}
+
+static void poll_gps() {
+	if (UCSR0A & (1<<RXC0)) {
+		g_gps_buffer[g_gps_buffer_w] = UDR0;
+		if (++g_gps_buffer_w >= GPS_BUFFER_SIZE) 
+			g_gps_buffer_w = 0;
+	}		
+}
+
+static void update_gps() {
+	while (g_gps_buffer[g_gps_buffer_r]) {
+		decode_gps	(g_gps_buffer[g_gps_buffer_r]);
+		g_gps_buffer[g_gps_buffer_r] = 0;
+		if (++g_gps_buffer_r >= GPS_BUFFER_SIZE)
+			g_gps_buffer_r = 0;
+	}			
 }
 
 #endif /* GPS_NMEA_H_ */

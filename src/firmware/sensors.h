@@ -35,14 +35,14 @@ __attribute__((noinline,unused))
 static u16 calc_level(adc_def *def) {
 	u8 input		= def->input;
 	u32 level		= g_adc_raw[input];
-	level			*= g_adc_scale[input];
+	level			*= pgm_read_word(&g_adc_scale[input]);
 	level			>>= HW_ADC_BITS;
 	if (level > def->in_max) {
 		level		= def->out_max;
 	} else if (level > def->in_min) {
 		level		-= def->in_min;
-		level		*= def->out_max - def->out_min;
-		level		/= def->in_max - def->in_min;
+		level		*= (def->out_max - def->out_min);
+		level		/= (def->in_max - def->in_min);
 		level		+= def->out_min;
 	} else {
 		level		= def->out_min;
@@ -54,7 +54,6 @@ static u16 calc_level(adc_def *def) {
 
 __attribute__((noinline,unused))
 static void convert_to_analog(u16 level, analog_value *res) {
-	res->val100		= level;
 	res->high		= level / 100;
 	res->low		= (level - (res->high * 100));
 }

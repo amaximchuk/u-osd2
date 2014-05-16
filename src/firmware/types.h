@@ -62,9 +62,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define CHAR_CURRENT		0x3D
 #define CHAR_DIST_TRAVELED	0x69
 #define CHAR_MAX_DIST		0x6A
-
-#define CHAR_HOME_ARROW		";/-?;/-?"
-#define CHAR_GPS_PACKETS	"-?;/"
 #define CHAR_RADAR_CENTER	0x21
 
 #define UOSD_FOURCC			MAKEFOURCC('U','O','S','D')
@@ -78,7 +75,10 @@ enum {
 
 enum {
 	GPS_4800		= 0,
-	GPS_9600
+	GPS_9600,
+	GPS_19200,
+	GPS_38400,
+	GPS_57600,
 };
 
 enum {
@@ -103,20 +103,17 @@ enum {
 typedef struct {
 	u8				high;
 	u8				low;
-	u16				val100;
-} analog_value;
+}	analog_value;
 
 // Time
 typedef struct {
-	union {
-		struct {
-			u8	tick;
-			u8	sec;
-			u8	min;
-			u8	blink;
-		};		
-	};
-} time;
+	struct {
+		u8	tick;
+		u8	sec;
+		u8	min;
+		u8	blink;
+	};		
+}	time;
 
 // GPS
 typedef struct {
@@ -129,13 +126,13 @@ typedef struct {
 		};
 		u32			data;			
 	};		
-} gps_coord;
+}	gps_coord;
 
 typedef struct {
 	gps_coord		latitude;
 	gps_coord		longitude;
 	s16				altitude;
-} gps_pos;
+}	gps_pos;
 
 typedef struct {	
 	gps_pos			pos;
@@ -144,11 +141,16 @@ typedef struct {
 	u8				sats;
 	u8				fix;
 	u8				chksum_valid;
-} gps_data;
+}	gps_data;
 
 // Text
 typedef struct {
-	u8				x,y;
+	union {
+		struct {
+			s8		x,y;
+		};		
+		u16			d;		
+	};
 }	lt_pos;
 
 typedef struct {
